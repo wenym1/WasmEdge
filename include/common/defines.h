@@ -39,3 +39,11 @@
 #error Unsupported environment!
 
 #endif
+
+#define WASMEDGE_ATTRIBUTE_WEAK [[gnu::weak]]
+
+#if WASMEDGE_OS_WINDOWS
+#define WASMEDGE_SYMBOL_EXPORT [[gnu::dllexport]]
+#else
+#define WASMEDGE_SYMBOL_EXPORT [[gnu::visibility("default")]]
+#endif

@@ -2,10 +2,9 @@
 // SPDX-FileCopyrightText: 2019-2022 Second State INC
 
 #include "vm/vm.h"
-#include "vm/async.h"
-
 #include "host/wasi/wasimodule.h"
 #include "host/wasmedge_process/processmodule.h"
+#include "vm/async.h"
 
 namespace WasmEdge {
 namespace VM {
