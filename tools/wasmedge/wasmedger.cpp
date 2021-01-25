@@ -7,6 +7,7 @@
 #include "common/version.h"
 #include "host/wasi/wasimodule.h"
 #include "host/wasmedge_process/processmodule.h"
+#include "plugin/plugin.h"
 #include "po/argument_parser.h"
 #include "vm/vm.h"
 
@@ -43,8 +44,8 @@ int main(int Argc, const char *Argv[]) {
       PO::MetaVar("PREOPEN_DIRS"sv));
 
   PO::List<std::string> Env(
-      PO::Description(
-          "Environ variables. Each variable can be specified as --env `NAME=VALUE`."sv),
+      PO::Description("Environ variables. Each variable can be specified as "
+                      "--env `NAME=VALUE`."sv),
       PO::MetaVar("ENVS"sv));
 
   PO::Option<PO::Toggle> PropMutGlobals(
@@ -85,42 +86,59 @@ int main(int Argc, const char *Argv[]) {
 
   PO::List<int> MemLim(
       PO::Description(
-          "Limitation of pages(as size of 64 KiB) in every memory instance. Upper bound can be specified as --memory-page-limit `PAGE_COUNT`."sv),
+          "Limitation of pages(as size of 64 KiB) in every memory instance. "
+          "Upper bound can be specified as --memory-page-limit `PAGE_COUNT`."
+          ""sv),
       PO::MetaVar("PAGE_COUNT"sv));
 
   PO::List<std::string> AllowCmd(
       PO::Description(
-          "Allow commands called from wasmedge_process host functions. Each command can be specified as --allow-command `COMMAND`."sv),
+          "Allow commands called from wasmedge_process host functions. Each "
+          "command can be specified as --allow-command `COMMAND`."sv),
       PO::MetaVar("COMMANDS"sv));
   PO::Option<PO::Toggle> AllowCmdAll(PO::Description(
       "Allow all commands called from wasmedge_process host functions."sv));
 
+  std::vector<WasmEdge::Plugin::Plugin> Plugins;
+  for (const auto &PluginPath : WasmEdge::Plugin::Plugin::enumerate(
+           std::filesystem::current_path() / "plugins"sv)) {
+    if (auto Plugin = WasmEdge::Plugin::Plugin::load(PluginPath)) {
+      spdlog::info("plugin {} {} loaded"sv, Plugin->getName(),
+                   Plugin->getVersion());
+      Plugins.push_back(std::move(*Plugin));
+    }
+  }
+
   auto Parser = PO::ArgumentParser();
-  if (!Parser.add_option(SoName)
-           .add_option(Args)
-           .add_option("reactor"sv, Reactor)
-           .add_option("dir"sv, Dir)
-           .add_option("env"sv, Env)
-           .add_option("enable-instruction-count"sv,
-                       ConfEnableInstructionCounting)
-           .add_option("enable-gas-measuring"sv, ConfEnableGasMeasuring)
-           .add_option("enable-time-measuring"sv, ConfEnableTimeMeasuring)
-           .add_option("enable-all-statistics"sv, ConfEnableAllStatistics)
-           .add_option("disable-import-export-mut-globals"sv, PropMutGlobals)
-           .add_option("disable-non-trap-float-to-int"sv, PropNonTrapF2IConvs)
-           .add_option("disable-sign-extension-operators"sv, PropSignExtendOps)
-           .add_option("disable-multi-value"sv, PropMultiValue)
-           .add_option("disable-bulk-memory"sv, PropBulkMemOps)
-           .add_option("disable-reference-types"sv, PropRefTypes)
-           .add_option("disable-simd"sv, PropSIMD)
-           .add_option("enable-multi-memory"sv, PropMultiMem)
-           .add_option("enable-all"sv, PropAll)
-           .add_option("time-limit"sv, TimeLim)
-           .add_option("gas-limit"sv, GasLim)
-           .add_option("memory-page-limit"sv, MemLim)
-           .add_option("allow-command"sv, AllowCmd)
-           .add_option("allow-command-all"sv, AllowCmdAll)
-           .parse(Argc, Argv)) {
+  Parser.add_option(SoName)
+      .add_option(Args)
+      .add_option("reactor"sv, Reactor)
+      .add_option("dir"sv, Dir)
+      .add_option("env"sv, Env)
+      .add_option("enable-instruction-count"sv, ConfEnableInstructionCounting)
+      .add_option("enable-gas-measuring"sv, ConfEnableGasMeasuring)
+      .add_option("enable-time-measuring"sv, ConfEnableTimeMeasuring)
+      .add_option("enable-all-statistics"sv, ConfEnableAllStatistics)
+      .add_option("disable-import-export-mut-globals"sv, PropMutGlobals)
+      .add_option("disable-non-trap-float-to-int"sv, PropNonTrapF2IConvs)
+      .add_option("disable-sign-extension-operators"sv, PropSignExtendOps)
+      .add_option("disable-multi-value"sv, PropMultiValue)
+      .add_option("disable-bulk-memory"sv, PropBulkMemOps)
+      .add_option("disable-reference-types"sv, PropRefTypes)
+      .add_option("disable-simd"sv, PropSIMD)
+      .add_option("enable-multi-memory"sv, PropMultiMem)
+      .add_option("enable-all"sv, PropAll)
+      .add_option("time-limit"sv, TimeLim)
+      .add_option("gas-limit"sv, GasLim)
+      .add_option("memory-page-limit"sv, MemLim)
+      .add_option("allow-command"sv, AllowCmd)
+      .add_option("allow-command-all"sv, AllowCmdAll);
+
+  for (const auto &Plugin : Plugins) {
+    Plugin.RegisterArgument(Parser);
+  }
+
+  if (!Parser.parse(Argc, Argv)) {
     return EXIT_FAILURE;
   }
   if (Parser.isVersion()) {
@@ -212,6 +230,14 @@ int main(int Argc, const char *Argv[]) {
           .replace_extension(std::filesystem::u8path("wasm"sv))
           .u8string(),
       Args.value(), Env.value());
+
+  std::vector<std::unique_ptr<WasmEdge::Runtime::ImportObject>>
+      PluginHostModules;
+
+  for (const auto &Plugin : Plugins) {
+    PluginHostModules.push_back(Plugin.AllocateHostModule());
+    VM.registerModule(*PluginHostModules.back());
+  }
 
   if (!Reactor.value()) {
     // command mode
