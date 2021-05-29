@@ -6,7 +6,6 @@
 #include "common/types.h"
 #include "common/version.h"
 #include "host/wasi/wasimodule.h"
-#include "host/wasmedge_process/processmodule.h"
 #include "plugin/plugin.h"
 #include "po/argument_parser.h"
 #include "vm/vm.h"
@@ -90,14 +89,6 @@ int main(int Argc, const char *Argv[]) {
           "Upper bound can be specified as --memory-page-limit `PAGE_COUNT`."
           ""sv),
       PO::MetaVar("PAGE_COUNT"sv));
-
-  PO::List<std::string> AllowCmd(
-      PO::Description(
-          "Allow commands called from wasmedge_process host functions. Each "
-          "command can be specified as --allow-command `COMMAND`."sv),
-      PO::MetaVar("COMMANDS"sv));
-  PO::Option<PO::Toggle> AllowCmdAll(PO::Description(
-      "Allow all commands called from wasmedge_process host functions."sv));
 
   std::vector<WasmEdge::Plugin::Plugin> Plugins;
   for (const auto &PluginPath : WasmEdge::Plugin::Plugin::enumerate(
@@ -213,16 +204,6 @@ int main(int Argc, const char *Argv[]) {
   WasmEdge::Host::WasiModule *WasiMod =
       dynamic_cast<WasmEdge::Host::WasiModule *>(
           VM.getImportModule(WasmEdge::HostRegistration::Wasi));
-  WasmEdge::Host::WasmEdgeProcessModule *ProcMod =
-      dynamic_cast<WasmEdge::Host::WasmEdgeProcessModule *>(
-          VM.getImportModule(WasmEdge::HostRegistration::WasmEdge_Process));
-
-  if (AllowCmdAll.value()) {
-    ProcMod->getEnv().AllowedAll = true;
-  }
-  for (auto &Str : AllowCmd.value()) {
-    ProcMod->getEnv().AllowedCmd.insert(Str);
-  }
 
   WasiMod->getEnv().init(
       Dir.value(),

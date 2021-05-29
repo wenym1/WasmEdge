@@ -5,7 +5,6 @@
 
 #include "aot/compiler.h"
 #include "host/wasi/wasimodule.h"
-#include "host/wasmedge_process/processmodule.h"
 #include "vm/vm.h"
 
 #include <algorithm>

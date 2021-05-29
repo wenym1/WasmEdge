@@ -3,7 +3,6 @@
 
 #include "vm/vm.h"
 #include "host/wasi/wasimodule.h"
-#include "host/wasmedge_process/processmodule.h"
 #include "vm/async.h"
 
 namespace WasmEdge {
@@ -31,12 +30,6 @@ void VM::unsafeInitVM() {
         std::make_unique<Host::WasiModule>();
     ExecutorEngine.registerModule(StoreRef, *WasiMod.get());
     ImpObjs.insert({HostRegistration::Wasi, std::move(WasiMod)});
-  }
-  if (Conf.hasHostRegistration(HostRegistration::WasmEdge_Process)) {
-    std::unique_ptr<Runtime::ImportObject> ProcMod =
-        std::make_unique<Host::WasmEdgeProcessModule>();
-    ExecutorEngine.registerModule(StoreRef, *ProcMod.get());
-    ImpObjs.insert({HostRegistration::WasmEdge_Process, std::move(ProcMod)});
   }
 }
 

@@ -2079,35 +2079,6 @@ TEST(APICoreTest, ImportObject) {
   EXPECT_EQ(WasmEdge_ImportObjectWASIGetExitCode(ImpObj), EXIT_SUCCESS);
   EXPECT_EQ(WasmEdge_ImportObjectWASIGetExitCode(nullptr), EXIT_FAILURE);
   WasmEdge_VMDelete(VM);
-
-  // Create wasmedge_process.
-  ImpObj = WasmEdge_ImportObjectCreateWasmEdgeProcess(Args, 2, false);
-  EXPECT_NE(ImpObj, nullptr);
-  WasmEdge_ImportObjectDelete(ImpObj);
-  ImpObj = WasmEdge_ImportObjectCreateWasmEdgeProcess(nullptr, 0, false);
-  EXPECT_NE(ImpObj, nullptr);
-  WasmEdge_ImportObjectDelete(ImpObj);
-  ImpObj = WasmEdge_ImportObjectCreateWasmEdgeProcess(Args, 2, true);
-  EXPECT_NE(ImpObj, nullptr);
-  WasmEdge_ImportObjectDelete(ImpObj);
-  ImpObj = WasmEdge_ImportObjectCreateWasmEdgeProcess(nullptr, 0, true);
-  EXPECT_NE(ImpObj, nullptr);
-  WasmEdge_ImportObjectDelete(ImpObj);
-
-  // Initialize wasmedge_process in VM.
-  Conf = WasmEdge_ConfigureCreate();
-  WasmEdge_ConfigureAddHostRegistration(
-      Conf, WasmEdge_HostRegistration_WasmEdge_Process);
-  VM = WasmEdge_VMCreate(Conf, nullptr);
-  WasmEdge_ConfigureDelete(Conf);
-  ImpObj = WasmEdge_VMGetImportModuleContext(
-      VM, WasmEdge_HostRegistration_WasmEdge_Process);
-  EXPECT_NE(ImpObj, nullptr);
-  WasmEdge_ImportObjectInitWasmEdgeProcess(nullptr, Args, 2, false);
-  EXPECT_TRUE(true);
-  WasmEdge_ImportObjectInitWasmEdgeProcess(ImpObj, Args, 2, false);
-  EXPECT_TRUE(true);
-  WasmEdge_VMDelete(VM);
 }
 
 TEST(APICoreTest, Async) {
