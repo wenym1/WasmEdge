@@ -126,6 +126,7 @@ public:
       ExecutionContext.InstrCount = &Stat->getInstrCountRef();
       ExecutionContext.CostTable = Stat->getCostTable().data();
       ExecutionContext.Gas = &Stat->getTotalCostRef();
+      ExecutionContext.GasLimit = Stat->getCostLimit();
     }
   }
 
@@ -633,6 +634,7 @@ private:
     std::atomic_uint64_t *InstrCount;
     uint64_t *CostTable;
     std::atomic_uint64_t *Gas;
+    uint64_t GasLimit;
     std::atomic_uint32_t *StopToken;
   };
 
