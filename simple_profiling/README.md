@@ -25,7 +25,10 @@ We will use `gprof` to profile the program.
 
 The WasmEdge program can be built following [build](https://wasmedge.org/book/en/extend/build.html).
 
-Since we want to use `gprof`, when we run `cmake` to initialize the build directory, we should add `-DCMAKE_CXX_FLAGS=-pg` option so that we can have the `-pg` option when we build the app.
+Since we want to use `gprof`, when we run `cmake` to initialize the build directory, we should add `-DCMAKE_CXX_FLAGS=-pg` option so that we can have the `-pg` option when we build the app. The `cmake` command to initialize the build directory is like
+```
+cmake -DCMAKE_CXX_FLAGS=-pg -DWASMEDGE_BUILD_TESTS=ON -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DWASMEDGE_BUILD_AOT_RUNTIME=OFF ..
+```
 
 ## Run and Profiling with `gprof`
 After building WasmEdge, we can run the matrix multiplication program WasmEdge VM and do profiling.
