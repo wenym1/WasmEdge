@@ -151,6 +151,7 @@ struct HandleHolder {
     reset();
     Handle = NewHandle;
   }
+  // TODO: move isSocket here
   boost::winapi::HANDLE_ Handle = nullptr;
 };
 #endif
@@ -505,7 +506,7 @@ public:
   WasiExpect<void> sockBind(uint8_t *Address, uint8_t AddressLength,
                             uint16_t Port) noexcept;
 
-  WasiExpect<void> sockListen(uint32_t Backlog) noexcept;
+  WasiExpect<void> sockListen(int32_t Backlog) noexcept;
 
   WasiExpect<INode> sockAccept() noexcept;
 
@@ -526,6 +527,21 @@ public:
                             __wasi_riflags_t RiFlags, __wasi_size_t &NRead,
                             __wasi_roflags_t &RoFlags) const noexcept;
 
+  /// Receive a message from a socket.
+  ///
+  /// Note: This is similar to `recv` in POSIX, though it also supports reading
+  /// the data into multiple buffers in the manner of `readv`.
+  ///
+  /// @param[in] RiData List of scatter/gather vectors to which to store data.
+  /// @param[in] RiFlags Message flags.
+  /// @param[out] NRead Return the number of bytes stored in RiData.
+  /// @param[out] RoFlags Return message flags.
+  /// @return Nothing or WASI error.
+  WasiExpect<void> sockRecvFrom(Span<Span<uint8_t>> RiData,
+                                __wasi_riflags_t RiFlags, uint8_t *Address,
+                                uint8_t AddressLength, __wasi_size_t &NRead,
+                                __wasi_roflags_t &RoFlags) const noexcept;
+
   /// Send a message on a socket.
   ///
   /// Note: This is similar to `send` in POSIX, though it also supports writing
@@ -539,6 +555,24 @@ public:
   WasiExpect<void> sockSend(Span<Span<const uint8_t>> SiData,
                             __wasi_siflags_t SiFlags,
                             __wasi_size_t &NWritten) const noexcept;
+
+  /// Send a message on a socket.
+  ///
+  /// Note: This is similar to `sendto` in POSIX, though it also supports
+  /// writing the data from multiple buffers in the manner of `writev`.
+  ///
+  /// @param[in] SiData List of scatter/gather vectors to which to retrieve
+  /// data.
+  /// @param[in] SiFlags Message flags.
+  /// @param[in] Address Address of the target.
+  /// @param[in] AddressLength The buffer size of Address.
+  /// @param[in] Port Connected port.
+  /// @param[out] NWritten The number of bytes transmitted.
+  /// @return Nothing or WASI error
+  WasiExpect<void> sockSendTo(Span<Span<const uint8_t>> SiData,
+                              __wasi_siflags_t SiFlags, uint8_t *Address,
+                              uint8_t AddressLength, int32_t Port,
+                              __wasi_size_t &NWritten) const noexcept;
 
   /// Shut down socket send and receive channels.
   ///
