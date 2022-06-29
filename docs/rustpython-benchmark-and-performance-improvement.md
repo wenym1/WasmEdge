@@ -38,7 +38,7 @@ The dummped runtime stacks sample can be converted into flamegraph with [FlameGr
 FlameGraph/stackcollapse.pl wasmedge.rust-python.stacks | FlameGraph/flamegraph.pl > wasmedge.rust-python.svg
 ```
 
-A flamegraph generated during benchmark can be found in [wasmedge.rust-python.svg](https://github.com/wenym1/WasmEdge/blob/master/rust-python-benchmark/result/wasmedge.rust-python.svg).
+A flamegraph generated during benchmark can be found in ![wasmedge.rust-python.svg](https://github.com/wenym1/WasmEdge/blob/master/rust-python-benchmark/result/wasmedge.rust-python.svg).
 
 ### Operation count
 
