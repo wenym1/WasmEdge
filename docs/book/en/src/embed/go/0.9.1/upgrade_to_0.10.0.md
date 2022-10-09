@@ -1,6 +1,6 @@
-# Upgrade to WasmEdge-Go v0.10.0 (Unreleased)
+# Upgrade to WasmEdge-Go v0.10.0
 
-Due to the WasmEdge-Go API breaking changes, this document shows the guideline of programming with WasmEdge-Go API to upgrade from `v0.9.2` to the future `v0.10.0` version.
+Due to the WasmEdge-Go API breaking changes, this document shows the guideline of programming with WasmEdge-Go API to upgrade from the `v0.9.2` to the `v0.10.0` version.
 
 **Due to the `v0.9.1` is retracted, we use the version `v0.9.2` here.**
 
@@ -244,7 +244,7 @@ globinst := mod.FindGlobal("global_i32")
 
 4. WASM function invokation
 
-    This example uses the [fibonacci.wasm](https://raw.githubusercontent.com/WasmEdge/WasmEdge/master/tools/wasmedge/examples/fibonacci.wasm), and the corresponding WAT file is at [fibonacci.wat](https://raw.githubusercontent.com/WasmEdge/WasmEdge/master/tools/wasmedge/examples/fibonacci.wat).
+    This example uses the [fibonacci.wasm](https://raw.githubusercontent.com/WasmEdge/WasmEdge/master/examples/wasm/fibonacci.wasm), and the corresponding WAT file is at [fibonacci.wat](https://raw.githubusercontent.com/WasmEdge/WasmEdge/master/examples/wasm/fibonacci.wat).
     In WasmEdge-Go `v0.9.2` version, developers can invoke a WASM function with the export function name:
 
     ```go
@@ -333,7 +333,7 @@ globinst := mod.FindGlobal("global_i32")
 
 ## Instances retrievement
 
-This example uses the [fibonacci.wasm](https://raw.githubusercontent.com/WasmEdge/WasmEdge/master/tools/wasmedge/examples/fibonacci.wasm), and the corresponding WAT file is at [fibonacci.wat](https://raw.githubusercontent.com/WasmEdge/WasmEdge/master/tools/wasmedge/examples/fibonacci.wat).
+This example uses the [fibonacci.wasm](https://raw.githubusercontent.com/WasmEdge/WasmEdge/master/examples/wasm/fibonacci.wasm), and the corresponding WAT file is at [fibonacci.wat](https://raw.githubusercontent.com/WasmEdge/WasmEdge/master/examples/wasm/fibonacci.wat).
 
 Before the WasmEdge-Go `v0.9.2` versions, developers can retrieve all exported instances of named or anonymous modules from `Store`:
 

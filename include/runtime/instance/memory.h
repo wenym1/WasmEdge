@@ -31,6 +31,50 @@ namespace WasmEdge {
 namespace Runtime {
 namespace Instance {
 
+template <uint32_t Length> void effective_memcpy(void *dest, const void *src) {
+  if constexpr (Length == 0) {
+    return;
+  }
+  // If Length is not the power of 2, use memcpy
+  if constexpr (((Length) & (Length - 1)) != 0) {
+    std::memcpy(dest, src, Length);
+    return;
+  }
+  // Check alignment of dest and src to Length. If any of dest and src is not
+  // aligned, use memcpy
+  const uint32_t alignment_mask = Length - 1;
+  if ((reinterpret_cast<uintptr_t>(dest) & alignment_mask) ||
+      (reinterpret_cast<uintptr_t>(src) & alignment_mask)) {
+    std::memcpy(dest, src, Length);
+    return;
+  }
+  switch (Length) {
+  case 1:
+    *reinterpret_cast<volatile uint8_t *>(dest) =
+        *reinterpret_cast<const volatile uint8_t *>(src);
+    break;
+  case 2:
+    *reinterpret_cast<volatile uint16_t *>(dest) =
+        *reinterpret_cast<const volatile uint16_t *>(src);
+    break;
+  case 4:
+    *reinterpret_cast<volatile uint32_t *>(dest) =
+        *reinterpret_cast<const volatile uint32_t *>(src);
+    break;
+  case 8:
+    *reinterpret_cast<volatile uint64_t *>(dest) =
+        *reinterpret_cast<const volatile uint64_t *>(src);
+    break;
+  case 16:
+    *reinterpret_cast<volatile uint128_t *>(dest) =
+        *reinterpret_cast<const volatile uint128_t *>(src);
+    break;
+  default:
+    std::memcpy(dest, src, Length);
+    break;
+  }
+}
+
 class MemoryInstance {
 
 public:
@@ -241,16 +285,11 @@ public:
   /// \param Length the load length from data. Need to <= sizeof(T).
   ///
   /// \returns void when success, ErrCode when failed.
-  template <typename T>
+  template <typename T, uint32_t Length = sizeof(T)>
   typename std::enable_if_t<IsWasmNumV<T>, Expect<void>>
-  loadValue(T &Value, uint32_t Offset, uint32_t Length) const noexcept {
+  loadValue(T &Value, uint32_t Offset) const noexcept {
     // Check the data boundary.
-    if (unlikely(Length > sizeof(T))) {
-      spdlog::error(ErrCode::MemoryOutOfBounds);
-      spdlog::error(
-          ErrInfo::InfoBoundary(Offset, Length, Offset + sizeof(T) - 1));
-      return Unexpect(ErrCode::MemoryOutOfBounds);
-    }
+    static_assert(Length <= sizeof(T));
     // Check the memory boundary.
     if (unlikely(!checkAccessBound(Offset, Length))) {
       spdlog::error(ErrCode::MemoryOutOfBounds);
@@ -261,16 +300,17 @@ public:
     if (likely(Length > 0)) {
       if constexpr (std::is_floating_point_v<T>) {
         // Floating case. Do the memory copy.
-        std::memcpy(&Value, &DataPtr[Offset], sizeof(T));
+        *(reinterpret_cast<volatile T *>(&Value)) =
+            *(reinterpret_cast<const volatile T *>(&DataPtr[Offset]));
       } else {
         if constexpr (sizeof(T) > 8) {
           assuming(sizeof(T) == 16);
           Value = 0;
-          std::memcpy(&Value, &DataPtr[Offset], Length);
+          effective_memcpy<Length>(&Value, &DataPtr[Offset]);
         } else {
           uint64_t LoadVal = 0;
           // Integer case. Extends to the result type.
-          std::memcpy(&LoadVal, &DataPtr[Offset], Length);
+          effective_memcpy<Length>(&LoadVal, &DataPtr[Offset]);
           if (std::is_signed_v<T> && (LoadVal >> (Length * 8 - 1))) {
             // Signed extension.
             for (unsigned int I = Length; I < 8; I++) {
@@ -294,16 +334,11 @@ public:
   /// \param Length the store length to data. Need to <= sizeof(T).
   ///
   /// \returns void when success, ErrCode when failed.
-  template <typename T>
+  template <typename T, uint32_t Length = sizeof(T)>
   typename std::enable_if_t<IsWasmNativeNumV<T>, Expect<void>>
-  storeValue(const T &Value, uint32_t Offset, uint32_t Length) noexcept {
+  storeValue(const T &Value, uint32_t Offset) noexcept {
     // Check the data boundary.
-    if (unlikely(Length > sizeof(T))) {
-      spdlog::error(ErrCode::MemoryOutOfBounds);
-      spdlog::error(
-          ErrInfo::InfoBoundary(Offset, Length, Offset + sizeof(T) - 1));
-      return Unexpect(ErrCode::MemoryOutOfBounds);
-    }
+    static_assert(Length <= sizeof(T));
     // Check the memory boundary.
     if (unlikely(!checkAccessBound(Offset, Length))) {
       spdlog::error(ErrCode::MemoryOutOfBounds);
@@ -312,7 +347,7 @@ public:
     }
     // Copy the stored data to the value.
     if (likely(Length > 0)) {
-      std::memcpy(&DataPtr[Offset], &Value, Length);
+      effective_memcpy<Length>(&DataPtr[Offset], &Value);
     }
     return {};
   }
